@@ -5,17 +5,12 @@ Timer receiveTimer;
 Timer beeperTimer;
 
 RCSwitch rfTransceiver;
-const int beeperPin{4};
-const int receivePin{12};
 
-void httpPost(unsigned long value)
+
+void AppClass::httpPost(unsigned long value)
 {
-	Serial.print("Server URL - ");
-	Serial.print(AppClass::getServerURL());
-	Serial.print("\n");
 	HttpClient httpClient;
-	//HttpRequest* postRequest = new HttpRequest(F("http://10.2.113.100:3000/"));
-	HttpRequest* postRequest = new HttpRequest(AppClass::getServerURL());
+	HttpRequest* postRequest = new HttpRequest(AppClass::serverURL);
 	postRequest
 			->setMethod(HTTP_POST)
 			->onRequestComplete(nullptr)
@@ -23,7 +18,7 @@ void httpPost(unsigned long value)
 	httpClient.send(postRequest);
 }
 
-void receiveRF()
+void AppClass::receiveRF()
 {
 	if(rfTransceiver.available()) {
 		if(rfTransceiver.getReceivedValue() == 0) {
@@ -37,11 +32,11 @@ void receiveRF()
 			Serial.print("Protocol: ");
 			Serial.println(rfTransceiver.getReceivedProtocol());
 
-			if (AppClass::getSound())
+			if (AppClass::sound)
 			{
-				digitalWrite(beeperPin,HIGH);
+				digitalWrite(AppClass::beeperPin,HIGH);
 				//beeperTimer.initializeMs(100, beep).start();
-				beeperTimer.initializeMs(100, [=](){digitalWrite(beeperPin,LOW);}).start(false);
+				beeperTimer.initializeMs(100, [=](){digitalWrite(AppClass::beeperPin,LOW);}).start(false);
 			}
 
 			httpPost(rfTransceiver.getReceivedValue());
@@ -50,6 +45,7 @@ void receiveRF()
 		rfTransceiver.resetAvailable();
 	}
 }
+
 void AppClass::_loadAppConfig(file_t& file)
 {
 	size_t strSize;
@@ -91,18 +87,12 @@ void AppClass::init()
 {
 	ApplicationClass::init();
 
-	rfTransceiver.enableReceive(receivePin);
+	rfTransceiver.enableReceive(AppClass::receivePin);
 
-	pinMode(beeperPin,OUTPUT);
-	digitalWrite(beeperPin,LOW);
+	pinMode(AppClass::beeperPin,OUTPUT);
+	digitalWrite(AppClass::beeperPin,LOW);
 
-	// Optional set pulse length.
-	//mySwitch.setPulseLength(240);
-	// Optional set protocol (default is 1, will work for most outlets)
-	// mySwitch.setProtocol(2);
-
-//	sendTimer.initializeMs(1000, sendRF).start();
-	receiveTimer.initializeMs(20, receiveRF).start();
+	receiveTimer.initializeMs(AppClass::receiveRefresh, AppClass::receiveRF).start();
 
 	Serial.printf(_F("AppClass init done!\n"));
 }

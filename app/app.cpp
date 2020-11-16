@@ -8,17 +8,6 @@ RCSwitch rfTransceiver;
 const int beeperPin{4};
 const int receivePin{12};
 
-void sendRF()
-{
-	rfTransceiver.send(5393, 24);
-	Serial.println("RF command successful sent");
-}
-
-void beep()
-{
-	digitalWrite(beeperPin,LOW);
-}
-
 void httpPost(unsigned long value)
 {
 	Serial.print("Server URL - ");
@@ -47,8 +36,14 @@ void receiveRF()
 			Serial.print("bit ");
 			Serial.print("Protocol: ");
 			Serial.println(rfTransceiver.getReceivedProtocol());
-			digitalWrite(beeperPin,HIGH);
-			beeperTimer.initializeMs(100, beep).start();
+
+			if (AppClass::getSound())
+			{
+				digitalWrite(beeperPin,HIGH);
+				//beeperTimer.initializeMs(100, beep).start();
+				beeperTimer.initializeMs(100, [=](){digitalWrite(beeperPin,LOW);}).start(false);
+			}
+
 			httpPost(rfTransceiver.getReceivedValue());
 		}
 

@@ -4,13 +4,13 @@
 Timer receiveTimer;
 Timer beeperTimer;
 
-RCSwitch mySwitch = RCSwitch();
+RCSwitch rfTransceiver;
 const int beeperPin{4};
 const int receivePin{12};
 
 void sendRF()
 {
-	mySwitch.send(5393, 24);
+	rfTransceiver.send(5393, 24);
 	Serial.println("RF command successful sent");
 }
 
@@ -36,23 +36,23 @@ void httpPost(unsigned long value)
 
 void receiveRF()
 {
-	if(mySwitch.available()) {
-		if(mySwitch.getReceivedValue() == 0) {
+	if(rfTransceiver.available()) {
+		if(rfTransceiver.getReceivedValue() == 0) {
 			Serial.print("Unknown encoding");
 		} else {
 			Serial.print("Received ");
-			Serial.print(mySwitch.getReceivedValue());
+			Serial.print(rfTransceiver.getReceivedValue());
 			Serial.print(" / ");
-			Serial.print(mySwitch.getReceivedBitlength());
+			Serial.print(rfTransceiver.getReceivedBitlength());
 			Serial.print("bit ");
 			Serial.print("Protocol: ");
-			Serial.println(mySwitch.getReceivedProtocol());
+			Serial.println(rfTransceiver.getReceivedProtocol());
 			digitalWrite(beeperPin,HIGH);
 			beeperTimer.initializeMs(100, beep).start();
-			httpPost(mySwitch.getReceivedValue());
+			httpPost(rfTransceiver.getReceivedValue());
 		}
 
-		mySwitch.resetAvailable();
+		rfTransceiver.resetAvailable();
 	}
 }
 void AppClass::_loadAppConfig(file_t& file)
@@ -96,7 +96,7 @@ void AppClass::init()
 {
 	ApplicationClass::init();
 
-	mySwitch.enableReceive(receivePin);
+	rfTransceiver.enableReceive(receivePin);
 
 	pinMode(beeperPin,OUTPUT);
 	digitalWrite(beeperPin,LOW);

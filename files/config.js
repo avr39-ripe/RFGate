@@ -12,6 +12,9 @@ function get_config() {
 		} else {
 			document.getElementById('StaEnable').checked = false;
 		}
+		
+		document.getElementById('sound').checked = (configJson.sound == 1 ? true: false );
+		
 	});
 }
 
@@ -41,7 +44,8 @@ function post_config(event) {
 	let formData = {
 			'loopInterval'			:	document.getElementById('loopInterval').value,
 			'updateURL'				:	document.getElementById('updateURL').value,
-			'serverURL'				:	document.getElementById('serverURL').value
+			'serverURL'				:	document.getElementById('serverURL').value,
+			'sound'					:	(document.getElementById('sound').checked ? 1 : 0)
 			};
 	//console.log.bind(console)(formData);		
 	post_cfg(formData);

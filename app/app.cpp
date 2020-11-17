@@ -56,6 +56,7 @@ void AppClass::_loadAppConfig(file_t& file)
 	serverURLBuffer[strSize] = 0;
 	serverURL = (const char *)serverURLBuffer;
 	delete[] serverURLBuffer;
+	fileRead(file, &sound, sizeof(sound));
 }
 
 void AppClass::_saveAppConfig(file_t& file)
@@ -63,6 +64,7 @@ void AppClass::_saveAppConfig(file_t& file)
 	size_t strSize{serverURL.length()};
 	fileWrite(file, &strSize, sizeof(strSize));
 	fileWrite(file, serverURL.c_str(), strSize);
+	fileWrite(file, &sound, sizeof(sound));
 }
 
 bool AppClass::_extraConfigReadJson(JsonObject& json)
@@ -71,7 +73,13 @@ bool AppClass::_extraConfigReadJson(JsonObject& json)
 	json.prettyPrintTo(Serial); Serial.println();
 	if (json["serverURL"].success())
 	{
-		serverURL = String((const char *)json["serverURL"]);
+		serverURL = static_cast<const char *>(json["serverURL"]);
+		needSave = true;
+	}
+
+	if (json["sound"].success())
+	{
+		sound = static_cast<bool>(json["sound"]);
 		needSave = true;
 	}
 
@@ -81,6 +89,7 @@ bool AppClass::_extraConfigReadJson(JsonObject& json)
 void AppClass::_extraConfigWriteJson(JsonObject& json)
 {
 	json["serverURL"] = serverURL;
+	json["sound"] = sound;
 }
 
 void AppClass::init()

@@ -20,12 +20,14 @@ void AppClass::httpPost(unsigned long value)
 
 void AppClass::receiveRF()
 {
+	uint32_t receivedValue;
+
 	if(rfTransceiver.available()) {
-		if(rfTransceiver.getReceivedValue() == 0) {
+		if( (receivedValue = rfTransceiver.getReceivedValue()) == 0) {
 			Serial.print("Unknown encoding");
 		} else {
 			Serial.print("Received ");
-			Serial.print(rfTransceiver.getReceivedValue());
+			Serial.print(receivedValue);
 			Serial.print(" / ");
 			Serial.print(rfTransceiver.getReceivedBitlength());
 			Serial.print("bit ");
@@ -39,7 +41,11 @@ void AppClass::receiveRF()
 				beeperTimer.initializeMs(100, [=](){digitalWrite(AppClass::beeperPin,LOW);}).start(false);
 			}
 
-			httpPost(rfTransceiver.getReceivedValue());
+			//httpPost(rfTransceiver.getReceivedValue());
+			//WebsocketConnection::broadcast(reinterpret_cast<const char*>(&receivedValue), sizeof(receivedValue), WS_FRAME_BINARY);
+			WebsocketConnection::broadcast(String{receivedValue});
+
+
 		}
 
 		rfTransceiver.resetAvailable();

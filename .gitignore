@@ -1,3 +1,4 @@
 out/
 files/index.*.js*
 files/index.html*
+js/rcWSApp/node_modules/

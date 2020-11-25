@@ -11,6 +11,7 @@ class AppClass : public ApplicationClass
 	static bool sound;
 	static uint32_t wsCheckConnectionInterval;
 	static uint32_t wsBroadcastPingInterval;
+	static bool wsBinaryFormat;
 
 	void _loadAppConfig(file_t& file) override;
 	void _saveAppConfig(file_t& file) override;

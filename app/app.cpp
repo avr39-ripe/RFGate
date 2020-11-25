@@ -5,6 +5,7 @@ String AppClass::serverURL{"http://10.2.113.100:3000"};
 bool AppClass::sound{true};
 uint32_t AppClass::wsCheckConnectionInterval{2000};
 uint32_t AppClass::wsBroadcastPingInterval{1000};
+bool AppClass::wsBinaryFormat{false};
 
 Timer receiveTimer;
 Timer beeperTimer;
@@ -47,8 +48,15 @@ void AppClass::receiveRF()
 			}
 
 			//httpPost(rfTransceiver.getReceivedValue());
-			//WebsocketConnection::broadcast(reinterpret_cast<const char*>(&receivedValue), sizeof(receivedValue), WS_FRAME_BINARY);
-			WebsocketConnection::broadcast(String{receivedValue});
+			if (wsBinaryFormat)
+			{
+				WebsocketConnection::broadcast(reinterpret_cast<const char*>(&receivedValue), sizeof(receivedValue), WS_FRAME_BINARY);
+			}
+			else
+			{
+				WebsocketConnection::broadcast(String{receivedValue});
+			}
+
 
 
 		}

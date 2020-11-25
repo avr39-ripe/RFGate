@@ -1,6 +1,11 @@
 #include <rfgate.h>
 #include <app.h>
 
+String AppClass::serverURL{"http://10.2.113.100:3000"};
+bool AppClass::sound{true};
+uint32_t AppClass::wsCheckConnectionInterval{2000};
+uint32_t AppClass::wsBroadcastPingInterval{1000};
+
 Timer receiveTimer;
 Timer beeperTimer;
 
@@ -98,16 +103,75 @@ void AppClass::_extraConfigWriteJson(JsonObject& json)
 	json["sound"] = sound;
 }
 
+void AppClass::wsConnected(WebsocketConnection& connection)
+{
+	Serial.print(_F("WebSocket Connected!\n"));
+	Serial.print(_F("WebSocket userData created!\n"));
+	connection.setUserData(new uint8_t{5});
+}
+
+void AppClass::wsDisconnected(WebsocketConnection& connection)
+{
+	Serial.print(_F("WebSocket Disconnected!\n"));
+	auto wsState{reinterpret_cast<uint8_t*>(connection.getUserData())};
+	if(wsState)
+	{
+		Serial.print(_F("WebSocket userData deleted!\n"));
+		delete wsState;
+	}
+
+}
+
+void AppClass::wsPong(WebsocketConnection& connection)
+{
+	Serial.print(_F("Got websocket pong reply\n"));
+	auto wsState{reinterpret_cast<uint8_t*>(connection.getUserData())};
+	Serial.print(_F("wsState was: "));
+	Serial.println(static_cast<int>(*wsState));
+	if (*wsState < 5 )
+	{
+		++(*wsState);
+	}
+}
+void AppClass::wsCheckConnection()
+{
+	auto websocketList{WebsocketConnection::getActiveWebsockets()};
+
+	for(unsigned i{0}; i < websocketList.count(); ++i)
+	{
+		auto wsState{reinterpret_cast<bool*>(websocketList[i]->getUserData())};
+		if (!(*wsState))
+		{
+			Serial.print(_F("Dead WebSocket connection detected! Disconnecting!\n"));
+			websocketList[i]->close();
+		}
+
+	}
+}
+
 void AppClass::init()
 {
 	ApplicationClass::init();
 
-	rfTransceiver.enableReceive(AppClass::receivePin);
+	rfTransceiver.enableReceive(receivePin);
 
-	pinMode(AppClass::beeperPin,OUTPUT);
-	digitalWrite(AppClass::beeperPin,LOW);
+	pinMode(beeperPin,OUTPUT);
+	digitalWrite(beeperPin,LOW);
 
-	receiveTimer.initializeMs(AppClass::receiveRefresh, AppClass::receiveRF).start();
+	receiveTimer.initializeMs(receiveRefresh, receiveRF).start();
+
+	_wsResource->setConnectionHandler(WebsocketDelegate(&AppClass::wsConnected,this));
+	_wsResource->setDisconnectionHandler(WebsocketDelegate(&AppClass::wsDisconnected,this));
+	_wsResource->setPongHandler(WebsocketDelegate(&AppClass::wsPong,this));
+
+	if (wsBroadcastPingInterval)
+	{
+		_wsBroadcastPingTimer.initializeMs(wsBroadcastPingInterval, wsBroadcastPing).start();
+	}
+	if (wsCheckConnectionInterval)
+	{
+		_wsCheckConnectionTimer.initializeMs(wsCheckConnectionInterval, wsCheckConnection).start();
+	}
 
 	Serial.printf(_F("AppClass init done!\n"));
 }
@@ -115,4 +179,26 @@ void AppClass::init()
 void AppClass::start()
 {
 	ApplicationClass::start();
+}
+
+void AppClass::wsBroadcastPing()
+{
+	const uint8_t pingData{42};
+	Serial.print("Broadcast websocket ping for -> ");
+
+	auto websocketList{WebsocketConnection::getActiveWebsockets()};
+
+	Serial.println(websocketList.count());
+
+	for(unsigned i{0}; i < websocketList.count(); ++i)
+	{
+		websocketList[i]->send(reinterpret_cast<const char*>(&pingData), sizeof(uint8_t), WS_FRAME_PING);
+		auto wsState{reinterpret_cast<uint8_t*>(websocketList[i]->getUserData())};
+		Serial.print(_F("wsState was: "));
+		Serial.println(static_cast<int>(*wsState));
+		if ( *wsState )
+		{
+			--(*wsState);
+		}
+	}
 }

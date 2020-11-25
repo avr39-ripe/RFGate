@@ -9,6 +9,8 @@ class AppClass : public ApplicationClass
 
 	static String serverURL;
 	static bool sound;
+	static uint32_t wsCheckConnectionInterval;
+	static uint32_t wsBroadcastPingInterval;
 
 	void _loadAppConfig(file_t& file) override;
 	void _saveAppConfig(file_t& file) override;
@@ -16,7 +18,13 @@ class AppClass : public ApplicationClass
 	void _extraConfigWriteJson(JsonObject& json) override;
 	static void receiveRF();
 	static void httpPost(unsigned long value);
-
+	static void wsBroadcastPing();
+	void wsConnected(WebsocketConnection& connection);
+	void wsDisconnected(WebsocketConnection& connection);
+	void wsPong(WebsocketConnection& connection);
+	static void wsCheckConnection();
+	Timer _wsCheckConnectionTimer;
+	Timer _wsBroadcastPingTimer;
 public:
 	static const String getServerURL() { return serverURL; };
 	static const bool getSound() { return sound; };

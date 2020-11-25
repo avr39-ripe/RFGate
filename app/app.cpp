@@ -76,6 +76,10 @@ void AppClass::_loadAppConfig(file_t& file)
 	serverURL = (const char *)serverURLBuffer;
 	delete[] serverURLBuffer;
 	fileRead(file, &sound, sizeof(sound));
+	fileRead(file, &wsBinaryFormat, sizeof(wsBinaryFormat));
+	fileRead(file, &wsBroadcastPingInterval, sizeof(wsBroadcastPingInterval));
+	fileRead(file, &wsCheckConnectionInterval, sizeof(wsCheckConnectionInterval));
+
 }
 
 void AppClass::_saveAppConfig(file_t& file)
@@ -84,6 +88,9 @@ void AppClass::_saveAppConfig(file_t& file)
 	fileWrite(file, &strSize, sizeof(strSize));
 	fileWrite(file, serverURL.c_str(), strSize);
 	fileWrite(file, &sound, sizeof(sound));
+	fileWrite(file, &wsBinaryFormat, sizeof(wsBinaryFormat));
+	fileWrite(file, &wsBroadcastPingInterval, sizeof(wsBroadcastPingInterval));
+	fileWrite(file, &wsCheckConnectionInterval, sizeof(wsCheckConnectionInterval));
 }
 
 bool AppClass::_extraConfigReadJson(JsonObject& json)
@@ -102,6 +109,33 @@ bool AppClass::_extraConfigReadJson(JsonObject& json)
 		needSave = true;
 	}
 
+	if (json["wsBinaryFormat"].success())
+	{
+		wsBinaryFormat = static_cast<bool>(json["wsBinaryFormat"]);
+		needSave = true;
+	}
+
+	if (json["wsBroadcastPingInterval"].success())
+	{
+		wsBroadcastPingInterval = static_cast<uint32_t>(json["wsBroadcastPingInterval"]);
+		if (wsBroadcastPingInterval)
+		{
+			_wsBroadcastPingTimer.stop();
+			_wsBroadcastPingTimer.initializeMs(wsBroadcastPingInterval, wsBroadcastPing).start();
+		}
+		needSave = true;
+	}
+
+	if (json["wsCheckConnectionInterval"].success())
+	{
+		wsCheckConnectionInterval = static_cast<uint32_t>(json["wsCheckConnectionInterval"]);
+		if (wsBroadcastPingInterval)
+		{
+			_wsCheckConnectionTimer.stop();
+			_wsCheckConnectionTimer.initializeMs(wsCheckConnectionInterval, wsCheckConnection).start();
+		}
+		needSave = true;
+	}
 	return needSave;
 }
 
@@ -109,6 +143,9 @@ void AppClass::_extraConfigWriteJson(JsonObject& json)
 {
 	json["serverURL"] = serverURL;
 	json["sound"] = sound;
+	json["wsBinaryFormat"] = wsBinaryFormat;
+	json["wsBroadcastPingInterval"] = wsBroadcastPingInterval;
+	json["wsCheckConnectionInterval"] = wsCheckConnectionInterval;
 }
 
 void AppClass::wsConnected(WebsocketConnection& connection)

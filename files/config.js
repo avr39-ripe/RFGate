@@ -13,7 +13,8 @@ function get_config() {
 			document.getElementById('StaEnable').checked = false;
 		}
 		
-		document.getElementById('sound').checked = (configJson.sound == 1 ? true: false );
+		document.getElementById('sound').checked = (configJson.sound == 1);
+		document.getElementById('wsBinaryFormat').checked = (configJson.wsBinaryFormat == 1);
 		
 	});
 }
@@ -45,7 +46,10 @@ function post_config(event) {
 			'loopInterval'			:	document.getElementById('loopInterval').value,
 			'updateURL'				:	document.getElementById('updateURL').value,
 			'serverURL'				:	document.getElementById('serverURL').value,
-			'sound'					:	(document.getElementById('sound').checked ? 1 : 0)
+			'sound'					:	(document.getElementById('sound').checked ? 1 : 0),
+			'wsBinaryFormat'		:	(document.getElementById('wsBinaryFormat').checked ? 1 : 0),
+			'wsBroadcastPingInterval'	:	document.getElementById('wsBroadcastPingInterval').value,
+			'wsCheckConnectionInterval'	:	document.getElementById('wsCheckConnectionInterval').value,
 			};
 	//console.log.bind(console)(formData);		
 	post_cfg(formData);

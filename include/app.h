@@ -1,5 +1,6 @@
 #pragma once
 #include <application.h>
+#include "FIFO.h"
 
 class AppClass : public ApplicationClass
 {

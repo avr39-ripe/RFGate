@@ -3,8 +3,8 @@
 
 String AppClass::serverURL{"http://10.2.113.100:3000"};
 bool AppClass::sound{true};
-uint32_t AppClass::wsCheckConnectionInterval{2000};
-uint32_t AppClass::wsBroadcastPingInterval{1000};
+uint32_t AppClass::wsCheckConnectionInterval{0};
+uint32_t AppClass::wsBroadcastPingInterval{0};
 bool AppClass::wsBinaryFormat{false};
 
 Timer receiveTimer;
@@ -12,7 +12,103 @@ Timer beeperTimer;
 
 RCSwitch rfTransceiver;
 
+template <typename T, int rawSize>
+class Queue : public FIFO<T, rawSize>
+{
+public:
+	T peekEnd() { return FIFO<T, rawSize>::raw[FIFO<T, rawSize>::nextIn - 1 < 0 ? rawSize - 1 : FIFO<T, rawSize>::nextIn - 1]; };
+};
 
+// TCP CLIENT
+const uint8_t recvQueueSize{50};
+Queue<uint32_t,recvQueueSize> recvQueue;
+const uint32_t debounceInterval{5000};
+bool bounced{false};
+uint32_t lastReceivedValue{0};
+
+Timer tcpSendTimer;
+Timer debounceTimer;
+MacAddress mac;
+const String serverIP{"10.2.113.100"};
+const int serverPort{3000};
+const uint32_t sendDataInterval{15 * 1000};
+
+void OnCompleted(TcpClient& client, bool successful)
+{
+	// debug msg
+	debug_e("OnCompleted");
+	debug_e("successful: %d", successful);
+}
+
+void OnReadyToSend(TcpClient& client, TcpConnectionEvent sourceEvent)
+{
+	// debug msg
+	debug_e("OnReadyToSend");
+	debug_e("sourceEvent: %d", sourceEvent);
+
+	if(sourceEvent == eTCE_Connected)
+	{
+//		String command = "#" + mac.toString() + '\n';
+//		Serial.println(command);
+//
+//		bool forceCloseAfterSent = true;
+//		client.sendString(command, forceCloseAfterSent);
+		uint32_t id;
+		String sendId;
+		Serial.print("RECVQueue.count: ");
+		Serial.println(recvQueue.count());
+
+		while(recvQueue.count())
+		{
+			Serial.print("recvQueue.count: ");
+			Serial.println(recvQueue.count());
+			id = recvQueue.dequeue();
+			Serial.print("Sending: ");
+			Serial.println(id);
+			sendId += id;
+			sendId += '\n';
+		}
+		Serial.print("client.sendString()\n");
+		client.sendString(sendId,true);
+		//client.close();
+	}
+}
+
+bool OnReceive(TcpClient& client, char* buf, int size)
+{
+	// debug msg
+	debug_e("OnReceive");
+	debug_e("%s", buf);
+	return true;
+}
+
+TcpClient tcpClient(OnCompleted, OnReadyToSend, OnReceive);
+
+void tcpSend()
+{
+	if(recvQueue.count())
+	{
+		Serial.print("recvQueue not empty! Try to send data\n");
+		if (tcpClient.isProcessing())
+		{
+			Serial.print("TCPClient already transmit some data\n");
+		}
+		else
+		{
+			Serial.print("SENDING via TCPClient!\n");
+			tcpClient.connect(serverIP, serverPort);
+		}
+
+	}
+	else
+	{
+		Serial.print("recvQueue EMPTY!\n");
+	}
+
+
+}
+
+// TCP CLIENT
 void AppClass::httpPost(unsigned long value)
 {
 	HttpClient httpClient;
@@ -48,17 +144,38 @@ void AppClass::receiveRF()
 			}
 
 			//httpPost(rfTransceiver.getReceivedValue());
-			if (wsBinaryFormat)
+//			if (wsBinaryFormat)
+//			{
+//				WebsocketConnection::broadcast(reinterpret_cast<const char*>(&receivedValue), sizeof(receivedValue), WS_FRAME_BINARY);
+//			}
+//			else
+//			{
+//				WebsocketConnection::broadcast(String{receivedValue});
+//			}
+			if (receivedValue == lastReceivedValue and !bounced)
 			{
-				WebsocketConnection::broadcast(reinterpret_cast<const char*>(&receivedValue), sizeof(receivedValue), WS_FRAME_BINARY);
+				bounced = true;
+				debounceTimer.initializeMs(debounceInterval, [=](){bounced = false;}).start(false);
+			}
+
+			if(receivedValue != lastReceivedValue or !bounced)
+			{
+
+
+				if (recvQueue.full())
+				{
+					Serial.print("Queue full! Remove first element\n");
+					recvQueue.dequeue();
+				}
+				Serial.print("Enqueue new code\n");
+				recvQueue.enqueue(receivedValue);
 			}
 			else
 			{
-				WebsocketConnection::broadcast(String{receivedValue});
+				Serial.print("Repeated code, skip for now!\n");
 			}
 
-
-
+			lastReceivedValue = receivedValue;
 		}
 
 		rfTransceiver.resetAvailable();
@@ -217,6 +334,8 @@ void AppClass::init()
 	{
 		_wsCheckConnectionTimer.initializeMs(wsCheckConnectionInterval, wsCheckConnection).start();
 	}
+
+	tcpSendTimer.initializeMs(sendDataInterval, tcpSend).start();
 
 	Serial.printf(_F("AppClass init done!\n"));
 }

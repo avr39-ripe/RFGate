@@ -14,8 +14,6 @@ function get_config() {
 		}
 		
 		document.getElementById('sound').checked = (configJson.sound == 1);
-		document.getElementById('wsBinaryFormat').checked = (configJson.wsBinaryFormat == 1);
-		
 	});
 }
 
@@ -47,9 +45,7 @@ function post_config(event) {
 			'updateURL'				:	document.getElementById('updateURL').value,
 			'serverURL'				:	document.getElementById('serverURL').value,
 			'sound'					:	(document.getElementById('sound').checked ? 1 : 0),
-			'wsBinaryFormat'		:	(document.getElementById('wsBinaryFormat').checked ? 1 : 0),
-			'wsBroadcastPingInterval'	:	document.getElementById('wsBroadcastPingInterval').value,
-			'wsCheckConnectionInterval'	:	document.getElementById('wsCheckConnectionInterval').value,
+			'sendDataInterval'		:	document.getElementById('sendDataInterval').value,
 			};
 	//console.log.bind(console)(formData);		
 	post_cfg(formData);

@@ -103,17 +103,12 @@
 								
 								<label for="serverURL">URL адрес сервера</label>
 								<input type="url" required class="form-control" id="serverURL" name="serverURL" placeholder="http://10.2.113.100:3000">
-								<label for="wsBinaryFormat">Бинарный формат передачи</label>
-								<input type="checkbox" id="wsBinaryFormat" name="wsBinaryFormat" class="form-control">
-								
+																
 								<label for="sound">Звук приема сигнала</label>
 								<input type="checkbox" id="sound" name="sound" class="form-control">
 								
-								<label for="wsBroadcastPingInterval">Интервал ping, мс</label>
-								<input type="number" required class="form-control" min="1000" max="6000000" step="1" id="wsBroadcastPingInterval" name="wsBroadcastPingInterval" class="form-control">
-								
-								<label for="wsCheckConnectionInterval">Интервал проверки "зависших" соединений, мс</label>
-								<input type="number" required class="form-control" min="1000" max="6000000" step="1" id="wsCheckConnectionInterval" name="wsCheckConnectionInterval" class="form-control">
+								<label for="sendDataInterval">Интервал посылки данных, мс</label>
+								<input type="number" required class="form-control" min="1000" max="60000000" step="1" id="sendDataInterval" name="sendDataInterval" class="form-control">
 														
 								<label for="loopInterval">Main loop interval, ms</label>
 								<input type="number" required class="form-control" min="100" max="60000" step="1" id="loopInterval" name="loopInterval" class="form-control" value="{loopInterval}">
